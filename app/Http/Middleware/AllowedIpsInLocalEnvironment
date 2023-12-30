@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Http\Middleware;
+use Illuminate\Support\Facades\DB;
+use App\Models\RechargerIps;
+use Closure;
+
+class AllowedIpsInLocalEnvironment {
+
+    public function handle($request, Closure $next) {
+
+        $match = DB::connection('netwey-r')
+            ->table('islim_ip_oxxo')
+            ->whereIn('type', ['A', 'W'])
+            ->where('status', 'A')
+            ->where('ip', $request->ip())
+            ->whereIn('env', ['P', 'A'])
+            ->first();
+
+        if($match != null)
+            return $next($request);
+
+        return response()->json([
+            'success' => false,
+            'data' => [
+                'cod_err' => 'ERR_AUTH',
+                'msg'     => 'No autorizado.',
+                'ip'      => $request->ip(),
+                'environment' => 'P'
+            ]
+        ], 401);
+
+    }
+
+}
